@@ -78,9 +78,6 @@ Feel free to open issues or submit pull requests for improvements or bug fixes.
 ## Video Demo
 
 01.mp4
-<video width="320" height="240" controls>
-  <source src="../01.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+
 ---
 
