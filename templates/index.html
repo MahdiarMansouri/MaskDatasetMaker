@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Image Processing App</title>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .container {
+      height: 90vh;
+    }
+    .column {
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .img-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 60vh;
+      border: 1px solid #dee2e6;
+      border-radius: 5px;
+      background-color: #f8f9fa;
+      margin-bottom: 20px;
+    }
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .form-group {
+      margin-bottom: 1rem;
+    }
+    .form-control, .form-check-input {
+      margin-bottom: 10px;
+    }
+    .btn-process, .btn-save {
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12 text-center my-3">
+        <h1>Image Processing App</h1>
+      </div>
+    </div>
+    <div class="row justify-content-center">
+      <div class="col-auto text-center">
+        <form class="form-inline justify-content-center" method="POST" action="/upload" enctype="multipart/form-data">
+          <div class="form-group mx-sm-3 mb-2">
+            <input type="file" class="form-control-file" name="file" required>
+          </div>
+          <button type="submit" class="btn btn-primary mb-2">Upload</button>
+        </form>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-6 column">
+        <h3 class="text-center">Original Image and Parameters</h3>
+        <div class="img-container">
+          <img id="original-image" src="" alt="No image uploaded">
+        </div>
+        <form id="process-form" method="POST">
+          <input type="hidden" name="image" id="image-name">
+          <div class="form-group">
+            <label for="threshold_type">Threshold Type:</label>
+            <select class="form-control" name="threshold_type" id="threshold_type">
+              <option value="0">Binary</option>
+              <option value="1">Binary Inverted</option>
+              <option value="2">Truncate</option>
+              <option value="3">To Zero</option>
+              <option value="4">To Zero Inverted</option>
+              <option value="adaptive">Adaptive</option>
+            </select>
+          </div>
+          <div id="simple-threshold-params" class="form-group">
+            <label for="threshold_value">Threshold Value:</label>
+            <input type="number" class="form-control" name="threshold_value" value="128">
+          </div>
+          <div id="adaptive-threshold-params" class="form-group" style="display: none;">
+            <label for="adaptive_method">Adaptive Method:</label>
+            <select class="form-control" name="adaptive_method">
+              <option value="mean">Mean</option>
+              <option value="gaussian">Gaussian</option>
+            </select>
+            <label for="block_size">Block Size:</label>
+            <input type="number" class="form-control" name="block_size" value="11">
+            <label for="c_value">C Value:</label>
+            <input type="number" class="form-control" name="c_value" value="2">
+          </div>
+          <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" name="apply_gaussian">
+            <label class="form-check-label" for="apply_gaussian">Apply Gaussian</label>
+          </div>
+          <div class="form-group">
+            <label for="gaussian_kernel">Gaussian Kernel:</label>
+            <input type="number" class="form-control" name="gaussian_kernel" value="5">
+          </div>
+          <div class="form-group">
+            <label for="morph_operation">Morphological Operation:</label>
+            <select class="form-control" name="morph_operation" id="morph_operation">
+              <option value="none">None</option>
+              <option value="erode">Erosion</option>
+              <option value="dilate">Dilation</option>
+              <option value="open">Opening</option>
+              <option value="close">Closing</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="morph_kernel_size">Morphological Kernel Size:</label>
+            <input type="number" class="form-control" name="morph_kernel_size" value="3">
+          </div>
+          <div class="form-group">
+            <label for="edge_detection">Edge Detection:</label>
+            <select class="form-control" name="edge_detection" id="edge_detection">
+              <option value="none">None</option>
+              <option value="sobel">Sobel</option>
+              <option value="canny">Canny</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="canny_threshold1">Canny Threshold1:</label>
+            <input type="number" class="form-control" name="canny_threshold1" value="100">
+          </div>
+          <div class="form-group">
+            <label for="canny_threshold2">Canny Threshold2:</label>
+            <input type="number" class="form-control" name="canny_threshold2" value="200">
+          </div>
+          <button type="button" class="btn btn-success btn-process" onclick="processImage()">Process</button>
+        </form>
+      </div>
+      <div class="col-md-6 column">
+        <h3 class="text-center">Processed Image</h3>
+        <div class="img-container">
+          <img id="processed-image" src="" alt="No processed image">
+        </div>
+        <form id="save-form" method="POST" action="/save" onsubmit="saveAndNext(event)">
+          <input type="hidden" name="image" id="processed-image-name">
+          <button type="submit" class="btn btn-primary btn-save">Save and Next</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    let images = {{ images | tojson }};
+    let currentIndex = 0;
+
+    function loadNextImage() {
+      if (currentIndex < images.length) {
+        let imageName = images[currentIndex];
+        document.getElementById('original-image').src = "{{ url_for('static', filename='images/') }}" + imageName;
+        document.getElementById('image-name').value = imageName;
+        document.getElementById('processed-image').src = "";
+        document.getElementById('save-form').style.display = 'none';
+      }
+    }
+
+    function processImage() {
+      let formData = new FormData(document.getElementById('process-form'));
+      fetch('/process', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        let url = URL.createObjectURL(blob);
+        document.getElementById('processed-image').src = url;
+        document.getElementById('processed-image-name').value = formData.get('image');
+        document.getElementById('save-form').style.display = 'block';
+      });
+    }
+
+    function updatePreview() {
+      let formData = new FormData(document.getElementById('process-form'));
+      fetch('/preview', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        let url = URL.createObjectURL(blob);
+        document.getElementById('processed-image').src = url;
+      });
+    }
+
+    function saveAndNext(event) {
+      event.preventDefault();
+      let formData = new FormData(document.getElementById('save-form'));
+      fetch('/save', {
+        method: 'POST',
+        body: formData
+      }).then(() => {
+        currentIndex++;
+        if (currentIndex < images.length) {
+          loadNextImage();
+        } else {
+          alert('No more images to process.');
+        }
+      });
+    }
+
+    document.getElementById('threshold_type').addEventListener('change', function() {
+      var thresholdType = this.value;
+      if (thresholdType == 'adaptive') {
+        document.getElementById('simple-threshold-params').style.display = 'none';
+        document.getElementById('adaptive-threshold-params').style.display = 'block';
+      } else {
+        document.getElementById('simple-threshold-params').style.display = 'block';
+        document.getElementById('adaptive-threshold-params').style.display = 'none';
+      }
+      updatePreview();
+    });
+
+    document.querySelectorAll('#process-form input, #process-form select').forEach(element => {
+      element.addEventListener('change', updatePreview);
+    });
+    
+    window.onload = loadNextImage;
+  </script>
+</body>
+</html>
