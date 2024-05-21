@@ -3,6 +3,14 @@
 
 This mini app is designed to help you prepare image masks for segmentation tasks efficiently.
 
+## Video Demo
+
+<video width="320" height="240" controls>
+  <source src="path_to_your_video/video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
+</video>
+
+
 ## Features
 
 - **Real-Time Processing:** Generate image masks in real-time as you upload your images.
