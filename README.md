@@ -21,19 +21,19 @@ This mini app is designed to help you prepare image masks for segmentation tasks
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/image-mask-preparation.git
+    git clone https://github.com/MahdiarMansouri/MaskDatasetMaker
     ```
 
 2. Navigate to the project directory:
 
     ```bash
-    cd image-mask-preparation
+    cd MaskDatasetMaker
     ```
 
 3. Install the necessary dependencies:
 
     ```bash
-    pip install -r requirements.txt
+    pip install Flask opencv-python numpy
     ```
 
 ## Usage
